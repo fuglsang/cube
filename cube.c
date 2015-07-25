@@ -37,14 +37,14 @@ typedef struct
 */
 
 vertex_t vertices[8] = {
-  { -15, -15,  15 },
-  {  15, -15,  15 },
-  {  15,  15,  15 },
-  { -15,  15,  15 },
-  { -15, -15, -15 },
-  {  15, -15, -15 },
-  {  15,  15, -15 },
-  { -15,  15, -15 },
+  { -40, -40,  40 },
+  {  40, -40,  40 },
+  {  40,  40,  40 },
+  { -40,  40,  40 },
+  { -40, -40, -40 },
+  {  40, -40, -40 },
+  {  40,  40, -40 },
+  { -40,  40, -40 },
 };
 vertex_t vertices_out[8];
 
@@ -57,8 +57,10 @@ edge_t edges[12] = {
 
 void main(void)
 {
-  UINT8 x = 0;
-  UINT8 y = 0;
+  UINT8 i = 0;
+  UINT8 a = 0;
+  INT8 s8 = 0;
+  INT8 c8 = 0;
 
   disable_interrupts();
   cpu_fast();// GBC
@@ -68,30 +70,45 @@ void main(void)
 
   while (1)
   {
-    UINT8 i = 0;
+    // step
+    s8 = sin8[a];
+    c8 = cos8[a];
+    a++;
 
-    // debug
-    x = (x + 1) % WX;
-    y = (y + 1) % WY;
-    plot_point(x, y);
-
-    // transform
+    // transform and project
     for (i = 0; i != 8; i++)
     {
       vertex_t * v = vertices + i;
-      vertex_t * v_out = vertices_out + i;      
-      //TODO
-      v_out->x = v->x;
-      v_out->y = v->y;
+      vertex_t * v_out = vertices_out + i;
+
+      INT16 x0 = v->x;
+      INT16 y0 = v->y;
+      INT16 x1 = x0 * c8 - y0 * s8;
+      INT16 y1 = y0 * c8 + x0 * s8;
+
+      //TODO projection
+
+      // sign 0x8000
+      // rest 0x7fff
+      v_out->x = ((x1 & 0x7fff) >> 7) | ((x1 & 0x8000) >> 8);
+      v_out->y = ((y1 & 0x7fff) >> 7) | ((y1 & 0x8000) >> 8);
     }
 
-    // plot wireframe
+    // draw wireframe
     for (i = 0; i != 12; i++)
     {
       edge_t * edge = edges + i;
-      vertex_t * vi = vertices_out + edge->i;
-      vertex_t * vj = vertices_out + edge->j;
-      line(HX + vi->x, HY + vi->y, HX + vj->x, HY + vj->y);
+      vertex_t * v0 = vertices_out + edge->i;
+      vertex_t * v1 = vertices_out + edge->j;
+
+      // gprintf("(%d,%d) -> (%d,%d)\n", v0->x, v0->y, v1->x, v1->y);
+      if (v0->x > v1->x)
+        line(HX + v1->x, HY + v1->y, HX + v0->x, HY + v0->y);
+      else
+        line(HX + v0->x, HY + v0->y, HX + v1->x, HY + v1->y);
     }
+
+    // sync
+    //TODO
   }
 }
