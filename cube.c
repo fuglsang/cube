@@ -1,23 +1,9 @@
 #include <gb/gb.h>
 #include <gb/drawing.h>
+#include "tables.h"
 
 #define WX GRAPHICS_WIDTH
 #define WY GRAPHICS_HEIGHT
-
-/* vertex indices
-
-      7           6
-       +---------+
-      /|        /|
-   3 / |     2 / |
-    +---------+  |
-    |  |      |  |
-    |  +------|--+
-    | / 4     | / 5
-    |/        |/
-    +---------+
-   0           1
-*/
 
 typedef struct
 {
@@ -31,6 +17,21 @@ typedef struct
   UINT8 i;
   UINT8 j;
 } edge_t;
+
+/* cube indices
+
+      7           6
+       +---------+
+      /|        /|
+   3 / |     2 / |
+    +---------+  |
+    |  |      |  |
+    |  +------|--+
+    | / 4     | / 5
+    |/        |/
+    +---------+
+   0           1
+*/
 
 vertex_t vertices[8] = {
   { -1, -1,  1 },
