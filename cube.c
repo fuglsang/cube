@@ -1,9 +1,12 @@
 #include <gb/gb.h>
 #include <gb/drawing.h>
+
 #include "tables.h"
 
 #define WX GRAPHICS_WIDTH
 #define WY GRAPHICS_HEIGHT
+#define HX (WX >> 1)
+#define HY (WY >> 1)
 
 typedef struct
 {
@@ -34,30 +37,22 @@ typedef struct
 */
 
 vertex_t vertices[8] = {
-  { -1, -1,  1 },
-  {  1, -1,  1 },
-  {  1,  1,  1 },
-  { -1,  1,  1 },
-  { -1, -1, -1 },
-  {  1, -1, -1 },
-  {  1,  1, -1 },
-  { -1,  1, -1 },
+  { -15, -15,  15 },
+  {  15, -15,  15 },
+  {  15,  15,  15 },
+  { -15,  15,  15 },
+  { -15, -15, -15 },
+  {  15, -15, -15 },
+  {  15,  15, -15 },
+  { -15,  15, -15 },
 };
+vertex_t vertices_out[8];
 
 edge_t edges[12] = {
-  { 0, 1 },
-  { 0, 3 },
-  { 0, 4 },
-  { 1, 2 },
-  { 1, 5 },
-  { 2, 3 },
-  { 2, 6 },
-  { 3, 7 },
-  { 4, 5 },
-  { 4, 7 },
-  { 4, 5 },
-  { 5, 6 },
-  { 6, 7 },  
+  { 0, 1 }, { 0, 3 }, { 0, 4 },
+  { 1, 2 }, { 1, 5 }, { 2, 3 },
+  { 2, 6 }, { 3, 7 }, { 4, 5 },
+  { 4, 7 }, { 5, 6 }, { 6, 7 },  
 };
 
 void main(void)
@@ -73,9 +68,28 @@ void main(void)
   
   while (1)
   {
+    UINT8 i = 0;
+    
+    // debug
     x = (x + 1) % WX;
     y = (y + 1) % WY;
-    
     plot_point(x, y);
+    
+    // project vertices
+    for (i = 0; i != 8; i++)
+    {
+      //TODO
+      vertices_out[i].x = vertices[i].x;
+      vertices_out[i].y = vertices[i].y;
+    }
+    
+    // plot wireframe
+    for (i = 0; i != 8; i++)
+    {
+      edge_t * edge = edges + i;
+      vertex_t * vi = vertices_out + edge->i;
+      vertex_t * vj = vertices_out + edge->j;
+      line(HX + vi->x, HY + vi->y, HX + vj->x, HY + vj->y);
+    }
   }
 }
