@@ -52,7 +52,7 @@ edge_t edges[12] = {
   { 0, 1 }, { 0, 3 }, { 0, 4 },
   { 1, 2 }, { 1, 5 }, { 2, 3 },
   { 2, 6 }, { 3, 7 }, { 4, 5 },
-  { 4, 7 }, { 5, 6 }, { 6, 7 },  
+  { 4, 7 }, { 5, 6 }, { 6, 7 },
 };
 
 void main(void)
@@ -61,30 +61,32 @@ void main(void)
   UINT8 y = 0;
 
   disable_interrupts();
-  cpu_fast();
+  cpu_fast();// GBC
   enable_interrupts();
-  
-  color (BLACK, WHITE, SOLID);
-  
+
+  color(BLACK, WHITE, SOLID);
+
   while (1)
   {
     UINT8 i = 0;
-    
+
     // debug
     x = (x + 1) % WX;
     y = (y + 1) % WY;
     plot_point(x, y);
-    
-    // project vertices
+
+    // transform
     for (i = 0; i != 8; i++)
     {
+      vertex_t * v = vertices + i;
+      vertex_t * v_out = vertices_out + i;      
       //TODO
-      vertices_out[i].x = vertices[i].x;
-      vertices_out[i].y = vertices[i].y;
+      v_out->x = v->x;
+      v_out->y = v->y;
     }
-    
+
     // plot wireframe
-    for (i = 0; i != 8; i++)
+    for (i = 0; i != 12; i++)
     {
       edge_t * edge = edges + i;
       vertex_t * vi = vertices_out + edge->i;
