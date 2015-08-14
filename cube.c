@@ -37,14 +37,14 @@ typedef struct
 */
 
 vertex_t vertices[8] = {
-  { -20, -20,  20 },
-  {  20, -20,  20 },
-  {  20,  20,  20 },
-  { -20,  20,  20 },
-  { -20, -20, -20 },
-  {  20, -20, -20 },
-  {  20,  20, -20 },
-  { -20,  20, -20 },
+  { -1, -1,  1 },
+  {  1, -1,  1 },
+  {  1,  1,  1 },
+  { -1,  1,  1 },
+  { -1, -1, -1 },
+  {  1, -1, -1 },
+  {  1,  1, -1 },
+  { -1,  1, -1 },
 };
 vertex_t vertices_out[8];
 
@@ -59,8 +59,9 @@ void main(void)
 {
   UINT8 i = 0;
   UINT8 a = 0;
-  INT8 s8 = 0;
-  INT8 c8 = 0;
+  INT8 s6 = 0;
+  INT8 c6 = 0;
+  INT8 dd = 0;
 
   disable_interrupts();
   cpu_fast();// GBC
@@ -70,54 +71,65 @@ void main(void)
 
   while (1)
   {
-    // step
-    s8 = sin8[a];
-    c8 = cos8[a];
-    a++;
-
-    // transform and project
-    for (i = 0; i != 8; i++)
-    {
-      vertex_t * v = vertices + i;
-      vertex_t * v_out = vertices_out + i;
-
-      INT16 x0 = v->x;
-      INT16 y0 = v->y;
-      INT16 x1 = x0 * c8 - y0 * s8;
-      INT16 y1 = y0 * c8 + x0 * s8;
-
-      // sign 0x8000
-      // rest 0x7fff
-      v_out->x = ((x1 & 0x7fff) >> 7) | ((x1 & 0x8000) >> 8);
-      v_out->y = ((y1 & 0x7fff) >> 7) | ((y1 & 0x8000) >> 8);
-
-      /* TODO projection
-      UINT16 x2 = ((x1 & 0x7fff) >> 7);// | ((x1 & 0x8000) >> 8);
-      UINT16 y2 = ((y1 & 0x7fff) >> 7);// | ((y1 & 0x8000) >> 8);
-
-      UINT16 dn = 40;
-      UINT16 dv = 60 - v->z;
-
-      x2 = (x2 * dn) / dv;
-      y2 = (y2 * dn) / dv;
-
-      v_out->x = (x2 & 0x7f) | ((x1 & 0x8000) >> 8);
-      v_out->y = (y2 & 0x7f) | ((y1 & 0x8000) >> 8);
-      */
-    }
-
     // draw wireframe
+    color(WHITE, BLACK, SOLID);
     for (i = 0; i != 12; i++)
     {
       edge_t * edge = edges + i;
       vertex_t * v0 = vertices_out + edge->i;
       vertex_t * v1 = vertices_out + edge->j;
 
-      // gprintf("(%d,%d) -> (%d,%d)\n", v0->x, v0->y, v1->x, v1->y);
       if (v0->x > v1->x)
-        line(HX + v1->x, HY + v1->y, HX + v0->x, HY + v0->y);
+        line(v1->x, v1->y, v0->x, v0->y);
       else
-        line(HX + v0->x, HY + v0->y, HX + v1->x, HY + v1->y);
+        line(v0->x, v0->y, v1->x, v1->y);
+    }
+    
+    // step
+    s6 = sin6[a];
+    c6 = cos6[a];
+    dd = s6 + s6;
+    a += 3;
+    
+    // transform and project
+    for (i = 0; i != 8; i++)
+    {
+      vertex_t * v = vertices + i;
+      vertex_t * v_out = vertices_out + i;
+
+      INT8 x = (v->x * c6) + (v->z * s6) + dd;
+      INT8 y = (v->y * 31) + dd;
+      INT8 z = (v->z * c6) - (v->x * s6);
+      
+      /* rotates in z
+      INT8 x = (v->x * c6) - (v->y * s6);
+      INT8 y = (v->y * c6) + (v->x * s6);
+      INT8 z = (v->z * 31);
+      */
+      
+      UINT16 dx = x < 0 ? -x : x;
+      UINT16 dy = y < 0 ? -y : y;
+      UINT16 dz = 128 - z;
+      
+      dx = (dx << 5) / dz;
+      dy = (dy << 5) / dz;
+      
+      v_out->x = HX + (x < 0 ? -dx : dx);
+      v_out->y = HY + (y < 0 ? -dy : dy);
+    }
+
+    // draw wireframe
+    color(BLACK, WHITE, SOLID);
+    for (i = 0; i != 12; i++)
+    {
+      edge_t * edge = edges + i;
+      vertex_t * v0 = vertices_out + edge->i;
+      vertex_t * v1 = vertices_out + edge->j;
+
+      if (v0->x > v1->x)
+        line(v1->x, v1->y, v0->x, v0->y);
+      else
+        line(v0->x, v0->y, v1->x, v1->y);
     }
 
     // sync
