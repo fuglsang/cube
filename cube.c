@@ -17,6 +17,12 @@ typedef struct
 
 typedef struct
 {
+  UINT8 x;
+  UINT8 y;
+} pixel_t;
+
+typedef struct
+{
   UINT8 i;
   UINT8 j;
 } edge_t;
@@ -46,7 +52,8 @@ vertex_t vertices[8] = {
   {  1,  1, -1 },
   { -1,  1, -1 },
 };
-vertex_t vertices_out[8];
+
+pixel_t pixels[8];
 
 edge_t edges[12] = {
   { 0, 1 }, { 0, 3 }, { 0, 4 },
@@ -54,6 +61,33 @@ edge_t edges[12] = {
   { 2, 6 }, { 3, 7 }, { 4, 5 },
   { 4, 7 }, { 5, 6 }, { 6, 7 },
 };
+
+UINT8 heart[81] = {
+  0,1,1,1,0,1,1,1,0,
+  1,0,0,0,1,0,0,0,1,
+  1,0,0,0,0,0,0,0,1,
+  1,0,0,0,0,0,0,0,1,
+  0,1,0,0,0,0,0,1,0,
+  0,1,0,0,0,0,1,0,0,
+  0,0,1,0,1,1,0,0,0,
+  0,0,1,1,0,0,0,0,0,
+  0,0,1,0,0,0,0,0,0,
+};
+
+void plot_heart(UINT8 x, UINT8 y)
+{
+  UINT8 ex = x + 9;
+  UINT8 ey = y + 9;
+  UINT8 ix, iy, k = 0;
+  for (iy = y; iy != ey; iy++)
+  {
+    for (ix = x; ix != ex; ix++)
+    {
+      if (heart[k++] != 0)
+        plot_point(ix, iy);
+    }
+  }
+}
 
 void main(void)
 {
@@ -68,21 +102,34 @@ void main(void)
   enable_interrupts();
 
   color(BLACK, WHITE, SOLID);
-
+  //plot_heart(12, 30);
+  //plot_heart(22, 26);
+  
+  for (i = 0; i != 8; i++)
+  {
+    pixels[i].x = HX;
+    pixels[i].y = HY;
+  }
+  
   while (1)
   {
-    // draw wireframe
-    color(WHITE, BLACK, SOLID);
-    for (i = 0; i != 12; i++)
+    INT8 xmin = pixels[0].x;
+    INT8 xmax = pixels[0].x;
+    INT8 ymin = pixels[0].y;
+    INT8 ymax = pixels[0].y;
+    
+    // calc min-max of last drawn cube
+    for (i = 1; i != 8; i++)
     {
-      edge_t * edge = edges + i;
-      vertex_t * v0 = vertices_out + edge->i;
-      vertex_t * v1 = vertices_out + edge->j;
-
-      if (v0->x > v1->x)
-        line(v1->x, v1->y, v0->x, v0->y);
-      else
-        line(v0->x, v0->y, v1->x, v1->y);
+      pixel_t * p = pixels + i;
+      if (xmin > p->x)
+          xmin = p->x;
+      else if (xmax < p->x)
+          xmax = p->x;
+      if (ymin < p->y)
+          ymin = p->y;
+      else if (ymax > p->y)
+          ymax = p->y;
     }
     
     // step
@@ -95,7 +142,7 @@ void main(void)
     for (i = 0; i != 8; i++)
     {
       vertex_t * v = vertices + i;
-      vertex_t * v_out = vertices_out + i;
+      pixel_t * p = pixels + i;
 
       INT8 x = (v->x * c6) + (v->z * s6) + dd;
       INT8 y = (v->y * 31) + dd;
@@ -114,25 +161,28 @@ void main(void)
       dx = (dx << 5) / dz;
       dy = (dy << 5) / dz;
       
-      v_out->x = HX + (x < 0 ? -dx : dx);
-      v_out->y = HY + (y < 0 ? -dy : dy);
+      p->x = HX + (x < 0 ? -dx : dx);
+      p->y = HY + (y < 0 ? -dy : dy);
     }
 
+    // sync
+    //wait_vbl_done();
+    
     // draw wireframe
+    color(WHITE, WHITE, SOLID);
+    box(xmin - 1, ymin + 1, xmax + 1, ymax - 1, M_FILL);
+
     color(BLACK, WHITE, SOLID);
     for (i = 0; i != 12; i++)
     {
       edge_t * edge = edges + i;
-      vertex_t * v0 = vertices_out + edge->i;
-      vertex_t * v1 = vertices_out + edge->j;
+      pixel_t * p0 = pixels + edge->i;
+      pixel_t * p1 = pixels + edge->j;
 
-      if (v0->x > v1->x)
-        line(v1->x, v1->y, v0->x, v0->y);
+      if (p0->x > p1->x)
+        line(p1->x, p1->y, p0->x, p0->y);
       else
-        line(v0->x, v0->y, v1->x, v1->y);
+        line(p0->x, p0->y, p1->x, p1->y);
     }
-
-    // sync
-    //TODO
   }
 }
