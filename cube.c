@@ -1,4 +1,5 @@
 #include <gb/gb.h>
+#include <gb/cgb.h>
 #include <gb/drawing.h>
 
 #include "tables.h"
@@ -64,14 +65,19 @@ edge_t edges[12] = {
 
 UINT8 heart[81] = {
   0,1,1,1,0,1,1,1,0,
-  1,0,0,0,1,0,0,0,1,
-  1,0,0,0,0,0,0,0,1,
-  1,0,0,0,0,0,0,0,1,
-  0,1,0,0,0,0,0,1,0,
-  0,1,0,0,0,0,1,0,0,
-  0,0,1,0,1,1,0,0,0,
+  1,1,0,1,1,1,1,1,1,
+  1,0,1,1,1,1,1,1,1,
+  1,0,1,1,1,1,1,1,1,
+  0,1,1,1,1,1,1,1,0,
+  0,1,1,1,1,1,1,0,0,
+  0,0,1,1,1,1,0,0,0,
   0,0,1,1,0,0,0,0,0,
   0,0,1,0,0,0,0,0,0,
+};
+
+UWORD palette[] =
+{
+  RGB_BLACK, RGB_WHITE, RGB_YELLOW, RGB_RED,
 };
 
 void plot_heart(UINT8 x, UINT8 y)
@@ -101,23 +107,27 @@ void main(void)
   cpu_fast();// GBC
   enable_interrupts();
 
-  color(BLACK, WHITE, SOLID);
-  //plot_heart(12, 30);
-  //plot_heart(22, 26);
-  
+  mode(M_DRAWING);
+  color(3, 0, SOLID);
+
+  set_bkg_palette(0, 1, palette);
+
+  plot_heart(12, 30);
+  plot_heart(22, 26);
+
   for (i = 0; i != 8; i++)
   {
     pixels[i].x = HX;
     pixels[i].y = HY;
   }
-  
+
   while (1)
   {
     INT8 xmin = pixels[0].x;
     INT8 xmax = pixels[0].x;
     INT8 ymin = pixels[0].y;
     INT8 ymax = pixels[0].y;
-    
+
     // calc min-max of last drawn cube
     for (i = 1; i != 8; i++)
     {
@@ -131,13 +141,13 @@ void main(void)
       else if (ymax > p->y)
           ymax = p->y;
     }
-    
+
     // step
     s6 = sin6[a];
     c6 = cos6[a];
     dd = s6 + s6;
     a += 3;
-    
+
     // transform and project
     for (i = 0; i != 8; i++)
     {
@@ -147,32 +157,32 @@ void main(void)
       INT8 x = (v->x * c6) + (v->z * s6) + dd;
       INT8 y = (v->y * 31) + dd;
       INT8 z = (v->z * c6) - (v->x * s6);
-      
+
       /* rotates in z
       INT8 x = (v->x * c6) - (v->y * s6);
       INT8 y = (v->y * c6) + (v->x * s6);
       INT8 z = (v->z * 31);
       */
-      
+
       UINT16 dx = x < 0 ? -x : x;
       UINT16 dy = y < 0 ? -y : y;
       UINT16 dz = 128 - z;
-      
+
       dx = (dx << 5) / dz;
       dy = (dy << 5) / dz;
-      
+
       p->x = HX + (x < 0 ? -dx : dx);
       p->y = HY + (y < 0 ? -dy : dy);
     }
 
     // sync
     //wait_vbl_done();
-    
+
     // draw wireframe
     color(WHITE, WHITE, SOLID);
     box(xmin - 1, ymin + 1, xmax + 1, ymax - 1, M_FILL);
 
-    color(BLACK, WHITE, SOLID);
+    color(1, 0, SOLID);
     for (i = 0; i != 12; i++)
     {
       edge_t * edge = edges + i;
